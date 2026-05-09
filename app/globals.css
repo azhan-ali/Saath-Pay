@@ -1,26 +1,293 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --paper: #fdfaf2;
+  --paper-dark: #f5efdc;
+  --ink: #1a1a1a;
+  --ink-soft: #2d2d2d;
+  --accent-orange: #ff6b35;
+  --accent-yellow: #ffd23f;
+  --accent-green: #06a77d;
+  --accent-blue: #4a90e2;
+  --accent-pink: #ff6b9d;
+  --accent-purple: #9b59b6;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-paper: var(--paper);
+  --color-paper-dark: var(--paper-dark);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-accent-orange: var(--accent-orange);
+  --color-accent-yellow: var(--accent-yellow);
+  --color-accent-green: var(--accent-green);
+  --color-accent-blue: var(--accent-blue);
+  --color-accent-pink: var(--accent-pink);
+  --color-accent-purple: var(--accent-purple);
+
+  --font-hand: "Caveat", cursive;
+  --font-sketch: "Kalam", cursive;
+  --font-body: "Patrick Hand", cursive;
+  --font-marker: "Permanent Marker", cursive;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  color: var(--ink);
+  font-family: var(--font-body), "Patrick Hand", system-ui, sans-serif;
+}
+
+/* Background is now handled by <AnimatedBackground /> component */
+body {
+  background-color: var(--paper);
+  min-height: 100vh;
+}
+
+/* Ruled notebook lines — optional decorative element */
+.paper-ruled {
+  background-image:
+    linear-gradient(to bottom, transparent 31px, rgba(74, 144, 226, 0.15) 32px);
+  background-size: 100% 32px;
+}
+
+/* Wobbly hand-drawn border using SVG filter */
+.wobble {
+  filter: url(#wobble);
+}
+
+/* Sketch button — thick marker outline */
+.sketch-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.9rem 2rem;
+  font-family: var(--font-marker), "Permanent Marker", cursive;
+  font-size: 1.1rem;
+  letter-spacing: 0.5px;
+  color: var(--ink);
+  background: var(--paper);
+  border: 3px solid var(--ink);
+  border-radius: 18px 22px 19px 23px / 22px 18px 23px 19px;
+  box-shadow: 4px 4px 0 var(--ink);
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.sketch-btn:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0 var(--ink);
+}
+
+.sketch-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 var(--ink);
+}
+
+.sketch-btn-primary {
+  background: var(--accent-yellow);
+}
+
+.sketch-btn-orange {
+  background: var(--accent-orange);
+  color: white;
+}
+
+.sketch-btn-green {
+  background: var(--accent-green);
+  color: white;
+}
+
+/* Sketch card — torn paper look */
+.sketch-card {
+  position: relative;
+  background: var(--paper);
+  border: 3px solid var(--ink);
+  border-radius: 20px 25px 22px 28px / 26px 20px 30px 22px;
+  box-shadow: 6px 6px 0 var(--ink);
+  padding: 1.75rem;
+  transition: transform 0.2s ease;
+}
+
+.sketch-card:hover {
+  transform: translate(-3px, -3px) rotate(-0.5deg);
+  box-shadow: 9px 9px 0 var(--ink);
+}
+
+.sketch-card-yellow {
+  background: #fff8dc;
+}
+.sketch-card-pink {
+  background: #ffe4ec;
+}
+.sketch-card-green {
+  background: #d4f4dd;
+}
+.sketch-card-blue {
+  background: #dceeff;
+}
+.sketch-card-orange {
+  background: #ffe4d4;
+}
+.sketch-card-purple {
+  background: #ebdcff;
+}
+
+/* Tape effect — washi tape on corners */
+.tape {
+  position: absolute;
+  width: 80px;
+  height: 22px;
+  background: rgba(255, 210, 63, 0.75);
+  border-left: 1px dashed rgba(0, 0, 0, 0.1);
+  border-right: 1px dashed rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Underline squiggle */
+.squiggle {
+  position: relative;
+  display: inline-block;
+}
+.squiggle::after {
+  content: "";
+  position: absolute;
+  left: -4px;
+  right: -4px;
+  bottom: -10px;
+  height: 12px;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 12'><path d='M0 6 Q 12.5 0 25 6 T 50 6 T 75 6 T 100 6' stroke='%23ff6b35' stroke-width='3' fill='none' stroke-linecap='round'/></svg>");
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+}
+
+.squiggle-yellow::after {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 12'><path d='M0 6 Q 12.5 0 25 6 T 50 6 T 75 6 T 100 6' stroke='%23ffd23f' stroke-width='4' fill='none' stroke-linecap='round'/></svg>");
+}
+
+.squiggle-green::after {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 12'><path d='M0 6 Q 12.5 0 25 6 T 50 6 T 75 6 T 100 6' stroke='%2306a77d' stroke-width='3' fill='none' stroke-linecap='round'/></svg>");
+}
+
+/* Handwritten highlight marker */
+.highlight {
+  background: linear-gradient(
+    180deg,
+    transparent 55%,
+    var(--accent-yellow) 55%,
+    var(--accent-yellow) 92%,
+    transparent 92%
+  );
+  padding: 0 4px;
+}
+
+.highlight-pink {
+  background: linear-gradient(
+    180deg,
+    transparent 55%,
+    #ffb8d1 55%,
+    #ffb8d1 92%,
+    transparent 92%
+  );
+  padding: 0 4px;
+}
+
+.highlight-green {
+  background: linear-gradient(
+    180deg,
+    transparent 55%,
+    #a7e5bb 55%,
+    #a7e5bb 92%,
+    transparent 92%
+  );
+  padding: 0 4px;
+}
+
+/* Animations */
+@keyframes wobble-slow {
+  0%,
+  100% {
+    transform: rotate(-1deg);
+  }
+  50% {
+    transform: rotate(1deg);
   }
 }
+.wobble-anim {
+  animation: wobble-slow 4s ease-in-out infinite;
+}
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@keyframes float-y {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+.float-anim {
+  animation: float-y 3s ease-in-out infinite;
+}
+
+@keyframes draw {
+  from {
+    stroke-dashoffset: 1000;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+.draw-line {
+  stroke-dasharray: 1000;
+  stroke-dashoffset: 1000;
+  animation: draw 2s ease-out forwards;
+}
+
+/* Dotted divider */
+.dotted-divider {
+  background-image: radial-gradient(
+    circle,
+    var(--ink) 1.5px,
+    transparent 1.5px
+  );
+  background-size: 12px 12px;
+  background-repeat: repeat-x;
+  height: 12px;
+}
+
+/* Rough border boxes */
+.rough-box {
+  border: 2.5px solid var(--ink);
+  border-radius: 15px 20px 18px 22px / 20px 15px 22px 18px;
+  position: relative;
+}
+
+.rough-box::before {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border: 2px solid rgba(0, 0, 0, 0.4);
+  border-radius: 17px 22px 20px 24px / 22px 17px 24px 20px;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+/* Text stroke for hero */
+.text-stroke {
+  -webkit-text-stroke: 2px var(--ink);
+  color: transparent;
+}
+
+/* Selection */
+::selection {
+  background: var(--accent-yellow);
+  color: var(--ink);
 }
