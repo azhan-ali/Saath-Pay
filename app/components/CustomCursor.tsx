@@ -3,338 +3,327 @@
 import { useEffect, useRef, useState } from "react";
 
 /**
- * Custom hand-drawn marker cursor.
- * - Big dot follower (the "pen tip")
- * - Wobbly outlined ring that lags behind
- * - Ink trail that fades
- * - Morphs on hover over interactive elements
- * - Sparkle burst on click
+ * SaathPay Custom Cursor — v2
+ *
+ * Design: Hand-drawn pencil nib that matches the sketch/paper theme.
+ *   • Default  → small orange marker dot + wobbly ink ring (lagging slightly)
+ *   • Hover    → ring fills yellow, dot turns black, label appears
+ *   • Click    → ink splat burst (paper-themed colors)
+ *
+ * Performance: ALL position updates go directly to DOM via refs.
+ * Zero React state updates during mouse movement → zero lag.
  */
-
-type CursorVariant = "default" | "hover" | "click";
-
-interface TrailPoint {
-  id: number;
-  x: number;
-  y: number;
-}
-
 export default function CustomCursor() {
-  const [pos, setPos] = useState({ x: -100, y: -100 });
-  const [ringPos, setRingPos] = useState({ x: -100, y: -100 });
-  const [variant, setVariant] = useState<CursorVariant>("default");
-  const [hoverLabel, setHoverLabel] = useState<string>("");
-  const [trail, setTrail] = useState<TrailPoint[]>([]);
-  const [clicks, setClicks] = useState<{ id: number; x: number; y: number }[]>([]);
   const [mounted, setMounted] = useState(false);
-
-  const ringRef = useRef({ x: -100, y: -100 });
-  const trailIdRef = useRef(0);
-  const clickIdRef = useRef(0);
-
-  // Detect touch device — skip cursor
   const [isTouch, setIsTouch] = useState(false);
+
+  // DOM refs — we write to these directly, never via setState
+  const dotRef   = useRef<HTMLDivElement>(null);
+  const ringRef  = useRef<HTMLDivElement>(null);
+  const labelRef = useRef<HTMLDivElement>(null);
+
+  // RAF-based ring lerp state (plain object, not React state)
+  const mouse  = useRef({ x: -200, y: -200 });
+  const ring   = useRef({ x: -200, y: -200 });
+  const rafId  = useRef<number>(0);
+  const isHover = useRef(false);
 
   useEffect(() => {
     setMounted(true);
-    if (typeof window !== "undefined") {
-      setIsTouch(
-        "ontouchstart" in window ||
-          navigator.maxTouchPoints > 0 ||
-          window.matchMedia("(pointer: coarse)").matches,
-      );
-    }
+    setIsTouch(
+      "ontouchstart" in window ||
+      navigator.maxTouchPoints > 0 ||
+      window.matchMedia("(pointer: coarse)").matches,
+    );
   }, []);
 
-  // Mouse tracking
   useEffect(() => {
-    if (isTouch) return;
+    if (!mounted || isTouch) return;
 
-    const handleMove = (e: MouseEvent) => {
-      setPos({ x: e.clientX, y: e.clientY });
+    // ── RAF loop: lerp ring toward mouse ──────────────────────────────────
+    const tick = () => {
+      const speed = isHover.current ? 0.12 : 0.16;
+      ring.current.x += (mouse.current.x - ring.current.x) * speed;
+      ring.current.y += (mouse.current.y - ring.current.y) * speed;
 
-      // Add to trail (throttled via id)
-      trailIdRef.current += 1;
-      const newPoint: TrailPoint = {
-        id: trailIdRef.current,
-        x: e.clientX,
-        y: e.clientY,
-      };
-      setTrail((prev) => [...prev.slice(-12), newPoint]);
+      if (ringRef.current) {
+        ringRef.current.style.transform =
+          `translate(${ring.current.x}px, ${ring.current.y}px)`;
+      }
+      rafId.current = requestAnimationFrame(tick);
+    };
+    rafId.current = requestAnimationFrame(tick);
+
+    // ── Mouse move ────────────────────────────────────────────────────────
+    const onMove = (e: MouseEvent) => {
+      mouse.current = { x: e.clientX, y: e.clientY };
+
+      // Move dot instantly (no lag)
+      if (dotRef.current) {
+        dotRef.current.style.transform =
+          `translate(${e.clientX}px, ${e.clientY}px)`;
+      }
 
       // Hover detection
       const el = e.target as HTMLElement;
       const interactive = el.closest(
-        "a, button, input, textarea, [role='button'], [data-cursor-hover]",
+        "a, button, input, textarea, select, [role='button'], [data-cursor-hover]",
       );
 
       if (interactive) {
-        setVariant("hover");
-        const label =
-          interactive.getAttribute("data-cursor-label") ||
-          (interactive.tagName === "A"
-            ? "click →"
-            : interactive.tagName === "BUTTON"
-              ? "click me!"
-              : interactive.tagName === "INPUT" || interactive.tagName === "TEXTAREA"
-                ? "type here"
-                : "tap!");
-        setHoverLabel(label);
+        if (!isHover.current) {
+          isHover.current = true;
+          dotRef.current?.classList.add("cursor-hover");
+          ringRef.current?.classList.add("ring-hover");
+        }
+        // Label
+        if (labelRef.current) {
+          const lbl =
+            interactive.getAttribute("data-cursor-label") ||
+            (interactive.tagName === "A"       ? "open →"     :
+             interactive.tagName === "BUTTON"  ? "click!"     :
+             interactive.tagName === "INPUT" ||
+             interactive.tagName === "TEXTAREA"? "type here"  : "tap!");
+          labelRef.current.textContent = lbl;
+          labelRef.current.style.opacity = "1";
+          labelRef.current.style.transform = "translateX(-50%) translateY(0)";
+        }
       } else {
-        setVariant("default");
-        setHoverLabel("");
+        if (isHover.current) {
+          isHover.current = false;
+          dotRef.current?.classList.remove("cursor-hover");
+          ringRef.current?.classList.remove("ring-hover");
+        }
+        if (labelRef.current) {
+          labelRef.current.style.opacity = "0";
+          labelRef.current.style.transform = "translateX(-50%) translateY(-4px)";
+        }
       }
     };
 
-    const handleDown = (e: MouseEvent) => {
-      setVariant("click");
-      clickIdRef.current += 1;
-      const newClick = {
-        id: clickIdRef.current,
-        x: e.clientX,
-        y: e.clientY,
-      };
-      setClicks((prev) => [...prev, newClick]);
-      setTimeout(() => {
-        setClicks((prev) => prev.filter((c) => c.id !== newClick.id));
-      }, 600);
+    // ── Click: ink splat ──────────────────────────────────────────────────
+    const onDown = (e: MouseEvent) => {
+      dotRef.current?.classList.add("cursor-click");
+      ringRef.current?.classList.add("ring-click");
+      spawnSplat(e.clientX, e.clientY);
     };
 
-    const handleUp = () => {
-      setVariant((v) => (v === "click" ? "default" : v));
+    const onUp = () => {
+      dotRef.current?.classList.remove("cursor-click");
+      ringRef.current?.classList.remove("ring-click");
     };
 
-    const handleLeave = () => {
-      setPos({ x: -100, y: -100 });
-      setRingPos({ x: -100, y: -100 });
+    const onLeave = () => {
+      mouse.current = { x: -200, y: -200 };
+      if (dotRef.current)  dotRef.current.style.transform  = "translate(-200px, -200px)";
+      if (ringRef.current) ringRef.current.style.transform = "translate(-200px, -200px)";
     };
 
-    window.addEventListener("mousemove", handleMove);
-    window.addEventListener("mousedown", handleDown);
-    window.addEventListener("mouseup", handleUp);
-    document.addEventListener("mouseleave", handleLeave);
+    window.addEventListener("mousemove",  onMove,  { passive: true });
+    window.addEventListener("mousedown",  onDown);
+    window.addEventListener("mouseup",    onUp);
+    document.addEventListener("mouseleave", onLeave);
 
     return () => {
-      window.removeEventListener("mousemove", handleMove);
-      window.removeEventListener("mousedown", handleDown);
-      window.removeEventListener("mouseup", handleUp);
-      document.removeEventListener("mouseleave", handleLeave);
+      cancelAnimationFrame(rafId.current);
+      window.removeEventListener("mousemove",  onMove);
+      window.removeEventListener("mousedown",  onDown);
+      window.removeEventListener("mouseup",    onUp);
+      document.removeEventListener("mouseleave", onLeave);
     };
-  }, [isTouch]);
-
-  // Smooth ring follow
-  useEffect(() => {
-    if (isTouch) return;
-    let raf: number;
-    const animate = () => {
-      ringRef.current.x += (pos.x - ringRef.current.x) * 0.18;
-      ringRef.current.y += (pos.y - ringRef.current.y) * 0.18;
-      setRingPos({ x: ringRef.current.x, y: ringRef.current.y });
-      raf = requestAnimationFrame(animate);
-    };
-    raf = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(raf);
-  }, [pos, isTouch]);
-
-  // Trail fade: drop oldest every 40ms
-  useEffect(() => {
-    if (isTouch) return;
-    const interval = setInterval(() => {
-      setTrail((prev) => prev.slice(1));
-    }, 40);
-    return () => clearInterval(interval);
-  }, [isTouch]);
+  }, [mounted, isTouch]);
 
   if (!mounted || isTouch) return null;
 
-  const dotSize = variant === "hover" ? 16 : variant === "click" ? 6 : 10;
-  const ringSize = variant === "hover" ? 60 : variant === "click" ? 30 : 36;
-
   return (
     <>
-      {/* Ink trail (fading dots behind cursor) */}
-      {trail.map((t, i) => {
-        const opacity = (i / trail.length) * 0.6;
-        const size = 4 + (i / trail.length) * 6;
-        return (
-          <div
-            key={t.id}
-            className="pointer-events-none fixed z-[9998] rounded-full"
-            style={{
-              left: t.x,
-              top: t.y,
-              width: size,
-              height: size,
-              transform: "translate(-50%, -50%)",
-              background: "#ff6b35",
-              opacity,
-              mixBlendMode: "multiply",
-              transition: "opacity 0.3s",
-            }}
-          />
-        );
-      })}
-
-      {/* Click sparkle bursts */}
-      {clicks.map((c) => (
-        <div
-          key={c.id}
-          className="pointer-events-none fixed z-[9999]"
-          style={{
-            left: c.x,
-            top: c.y,
-            transform: "translate(-50%, -50%)",
-          }}
-        >
-          <ClickBurst />
-        </div>
-      ))}
-
-      {/* Outer wobbly ring */}
+      {/* ── Dot (pen nib tip) — moves instantly ── */}
       <div
-        className="pointer-events-none fixed z-[9999] transition-all duration-150 ease-out"
-        style={{
-          left: ringPos.x,
-          top: ringPos.y,
-          width: ringSize,
-          height: ringSize,
-          transform: "translate(-50%, -50%)",
-          mixBlendMode: variant === "hover" ? "normal" : "multiply",
-        }}
-      >
-        <svg
-          width={ringSize}
-          height={ringSize}
-          viewBox="0 0 60 60"
-          className={variant === "hover" ? "animate-spin-slow" : ""}
-        >
-          <circle
-            cx="30"
-            cy="30"
-            r="26"
-            fill={variant === "hover" ? "#ffd23f" : "none"}
-            stroke="#1a1a1a"
-            strokeWidth="2.5"
-            strokeDasharray={variant === "click" ? "3 3" : "0"}
-            opacity={variant === "hover" ? "0.9" : "1"}
-          />
-          {/* Wobble second ring for hand-drawn feel */}
-          <circle
-            cx="30"
-            cy="30"
-            r="24"
-            fill="none"
-            stroke="#1a1a1a"
-            strokeWidth="1"
-            opacity="0.4"
-          />
-        </svg>
-
-        {/* Hover label */}
-        {variant === "hover" && hoverLabel && (
-          <div
-            className="absolute left-1/2 top-full mt-2 -translate-x-1/2 whitespace-nowrap rounded-[8px_12px_10px_14px] border-[2px] border-ink bg-accent-orange px-3 py-1 font-[family-name:var(--font-marker)] text-sm text-white shadow-[2px_2px_0_#1a1a1a]"
-            style={{ textShadow: "1px 1px 0 #1a1a1a" }}
-          >
-            {hoverLabel}
-          </div>
-        )}
-      </div>
-
-      {/* Inner pen tip dot (orange marker ink) */}
-      <div
-        className="pointer-events-none fixed z-[10000] rounded-full transition-all duration-75"
-        style={{
-          left: pos.x,
-          top: pos.y,
-          width: dotSize,
-          height: dotSize,
-          transform: "translate(-50%, -50%)",
-          background:
-            variant === "hover"
-              ? "#1a1a1a"
-              : variant === "click"
-                ? "#06a77d"
-                : "#ff6b35",
-          boxShadow:
-            variant === "hover"
-              ? "0 0 0 3px #ffd23f, 1px 1px 0 #1a1a1a"
-              : "1px 1px 0 #1a1a1a",
-        }}
+        ref={dotRef}
+        id="sp-cursor-dot"
+        className="pointer-events-none fixed left-0 top-0 z-[10000]"
+        style={{ willChange: "transform" }}
       />
 
-      {/* Global cursor hide CSS */}
-      <style jsx global>{`
-        html,
-        body,
-        a,
-        button,
-        input,
-        textarea,
-        select,
-        [role="button"] {
-          cursor: none !important;
+      {/* ── Ring (lagging follower) ── */}
+      <div
+        ref={ringRef}
+        id="sp-cursor-ring"
+        className="pointer-events-none fixed left-0 top-0 z-[9999]"
+        style={{ willChange: "transform" }}
+      >
+        {/* Hover label inside ring container so it follows */}
+        <div
+          ref={labelRef}
+          id="sp-cursor-label"
+          style={{
+            position: "absolute",
+            left: "50%",
+            top: "calc(100% + 8px)",
+            transform: "translateX(-50%) translateY(-4px)",
+            opacity: 0,
+            transition: "opacity 0.15s, transform 0.15s",
+            whiteSpace: "nowrap",
+            pointerEvents: "none",
+          }}
+        />
+      </div>
+
+      {/* ── Global styles ── */}
+      <style>{`
+        /* Hide native cursor everywhere */
+        *, *::before, *::after { cursor: none !important; }
+
+        /* ── Dot ── */
+        #sp-cursor-dot {
+          width: 10px;
+          height: 10px;
+          margin-left: -5px;
+          margin-top: -5px;
+          border-radius: 50%;
+          background: #ff6b35;
+          border: 2px solid #1a1a1a;
+          box-shadow: 1px 1px 0 #1a1a1a;
+          transition: width 0.12s, height 0.12s, margin 0.12s, background 0.12s, border-radius 0.12s;
+        }
+        #sp-cursor-dot.cursor-hover {
+          width: 14px;
+          height: 14px;
+          margin-left: -7px;
+          margin-top: -7px;
+          background: #1a1a1a;
+          border-color: #ffd23f;
+          box-shadow: 0 0 0 3px #ffd23f, 1px 1px 0 #1a1a1a;
+        }
+        #sp-cursor-dot.cursor-click {
+          width: 6px;
+          height: 6px;
+          margin-left: -3px;
+          margin-top: -3px;
+          background: #06a77d;
+          border-color: #1a1a1a;
+          box-shadow: 1px 1px 0 #1a1a1a;
         }
 
-        @keyframes spin-slow {
-          from {
-            transform: rotate(0deg);
-          }
-          to {
-            transform: rotate(360deg);
-          }
+        /* ── Ring ── */
+        #sp-cursor-ring {
+          width: 36px;
+          height: 36px;
+          margin-left: -18px;
+          margin-top: -18px;
+          border: 2.5px solid #1a1a1a;
+          /* Organic wobbly shape — matches sketch theme */
+          border-radius: 52% 48% 55% 45% / 48% 52% 48% 52%;
+          background: transparent;
+          transition:
+            width 0.18s cubic-bezier(.34,1.56,.64,1),
+            height 0.18s cubic-bezier(.34,1.56,.64,1),
+            margin 0.18s cubic-bezier(.34,1.56,.64,1),
+            background 0.15s,
+            border-color 0.15s,
+            border-radius 0.3s;
         }
-        .animate-spin-slow {
-          animation: spin-slow 3s linear infinite;
+        #sp-cursor-ring.ring-hover {
+          width: 52px;
+          height: 52px;
+          margin-left: -26px;
+          margin-top: -26px;
+          background: rgba(255, 210, 63, 0.35);
+          border-color: #1a1a1a;
+          border-radius: 48% 52% 45% 55% / 52% 48% 52% 48%;
+          animation: ring-wobble 2s ease-in-out infinite;
+        }
+        #sp-cursor-ring.ring-click {
+          width: 24px;
+          height: 24px;
+          margin-left: -12px;
+          margin-top: -12px;
+          border-style: dashed;
+          border-color: #06a77d;
+          background: rgba(6, 167, 125, 0.1);
+        }
+
+        /* ── Label ── */
+        #sp-cursor-label {
+          background: #1a1a1a;
+          color: #fdfaf2;
+          font-family: 'Permanent Marker', cursive;
+          font-size: 12px;
+          padding: 3px 10px;
+          border-radius: 8px 10px 9px 11px;
+          border: 2px solid #1a1a1a;
+          box-shadow: 2px 2px 0 rgba(0,0,0,0.3);
+          letter-spacing: 0.3px;
+        }
+
+        /* ── Animations ── */
+        @keyframes ring-wobble {
+          0%, 100% { border-radius: 48% 52% 45% 55% / 52% 48% 52% 48%; }
+          33%       { border-radius: 55% 45% 52% 48% / 45% 55% 45% 55%; }
+          66%       { border-radius: 45% 55% 48% 52% / 55% 45% 55% 45%; }
+        }
+
+        /* ── Ink splat ── */
+        .sp-splat {
+          position: fixed;
+          pointer-events: none;
+          z-index: 9998;
+          width: 0;
+          height: 0;
+        }
+        .sp-splat-dot {
+          position: absolute;
+          border-radius: 50%;
+          border: 1.5px solid #1a1a1a;
+          animation: splat-fly var(--dur) ease-out forwards;
+        }
+        @keyframes splat-fly {
+          0%   { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+          60%  { opacity: 0.8; }
+          100% { transform: translate(
+                   calc(-50% + var(--dx)),
+                   calc(-50% + var(--dy))
+                 ) scale(0.2);
+                 opacity: 0; }
         }
       `}</style>
     </>
   );
 }
 
-/** Sparkle burst animation on click */
-function ClickBurst() {
-  const particles = Array.from({ length: 8 });
-  return (
-    <div className="relative">
-      {particles.map((_, i) => {
-        const angle = (i / particles.length) * 360;
-        const colors = ["#ff6b35", "#ffd23f", "#06a77d", "#ff6b9d", "#4a90e2"];
-        const color = colors[i % colors.length];
-        return (
-          <div
-            key={i}
-            className="absolute left-0 top-0 h-2 w-2 rounded-full"
-            style={{
-              background: color,
-              border: "1.5px solid #1a1a1a",
-              animation: `burst-${i} 0.6s ease-out forwards`,
-            }}
-          />
-        );
-      })}
-      <style jsx>{`
-        ${particles
-          .map((_, i) => {
-            const angle = (i / particles.length) * 360;
-            const rad = (angle * Math.PI) / 180;
-            const dx = Math.cos(rad) * 40;
-            const dy = Math.sin(rad) * 40;
-            return `
-              @keyframes burst-${i} {
-                0% {
-                  transform: translate(-50%, -50%) scale(1);
-                  opacity: 1;
-                }
-                100% {
-                  transform: translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(0);
-                  opacity: 0;
-                }
-              }
-            `;
-          })
-          .join("\n")}
-      `}</style>
-    </div>
-  );
+// ── Ink splat spawner (pure DOM, no React) ────────────────────────────────────
+const SPLAT_COLORS = ["#ff6b35", "#ffd23f", "#06a77d", "#ff6b9d", "#4a90e2", "#9b59b6", "#1a1a1a"];
+
+function spawnSplat(x: number, y: number) {
+  const container = document.createElement("div");
+  container.className = "sp-splat";
+  container.style.left = `${x}px`;
+  container.style.top  = `${y}px`;
+
+  const count = 7;
+  for (let i = 0; i < count; i++) {
+    const angle = (i / count) * 360 + Math.random() * 20 - 10;
+    const dist  = 28 + Math.random() * 20;
+    const rad   = (angle * Math.PI) / 180;
+    const dx    = Math.cos(rad) * dist;
+    const dy    = Math.sin(rad) * dist;
+    const size  = 5 + Math.random() * 5;
+    const dur   = 0.45 + Math.random() * 0.2;
+    const color = SPLAT_COLORS[i % SPLAT_COLORS.length];
+
+    const dot = document.createElement("div");
+    dot.className = "sp-splat-dot";
+    dot.style.cssText = `
+      width: ${size}px;
+      height: ${size}px;
+      background: ${color};
+      --dx: ${dx}px;
+      --dy: ${dy}px;
+      --dur: ${dur}s;
+    `;
+    container.appendChild(dot);
+  }
+
+  document.body.appendChild(container);
+  setTimeout(() => container.remove(), 700);
 }
