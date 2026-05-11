@@ -1,7 +1,8 @@
 -- ════════════════════════════════════════════════════════════
---  SaathPay — Database Schema
+--  SaathPay — Database Schema v2
 --  Run this in Supabase SQL Editor: https://app.supabase.com
 --  (Your Project → SQL Editor → New Query → paste → Run)
+--  Safe to re-run — uses IF NOT EXISTS + DROP IF EXISTS
 -- ════════════════════════════════════════════════════════════
 
 -- ─────────────── ENUMS ───────────────
@@ -37,10 +38,10 @@ exception when duplicate_object then null; end $$;
 -- ─────────────── USERS ───────────────
 create table if not exists public.users (
   id uuid primary key references auth.users(id) on delete cascade,
-  email text unique not null,
+  email text,
   full_name text,
-  role user_role not null default 'freelancer',
-  wallet_address text unique,
+  role text not null default 'freelancer',
+  wallet_address text,
   avatar_url text,
   reputation_score integer default 50,
   total_earned numeric(20,6) default 0,
@@ -59,7 +60,7 @@ create table if not exists public.projects (
   description text,
   total_amount numeric(20,6) not null,
   currency text default 'USD',
-  status project_status default 'draft',
+  status text default 'awaiting_payment',
   escrow_pda text,
   solana_tx_hash text,
   dodo_checkout_url text,
@@ -82,7 +83,7 @@ create table if not exists public.milestones (
   amount numeric(20,6) not null,
   deadline date,
   proof_uri text,
-  status milestone_status default 'pending',
+  status text default 'pending',
   ai_generated boolean default false,
   submitted_at timestamp with time zone,
   approved_at timestamp with time zone,
@@ -100,7 +101,7 @@ create table if not exists public.transactions (
   project_id uuid references public.projects(id) on delete set null,
   milestone_id uuid references public.milestones(id) on delete set null,
   agent_id uuid,
-  type transaction_type not null,
+  type text not null,
   amount numeric(20,6) not null,
   currency text default 'USDC',
   from_address text,
@@ -134,7 +135,7 @@ create index if not exists idx_agents_project on public.ai_agents(project_id);
 create table if not exists public.notifications (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.users(id) on delete cascade,
-  type notification_type not null,
+  type text not null,
   title text not null,
   body text,
   link text,
@@ -156,7 +157,7 @@ alter table public.transactions enable row level security;
 alter table public.ai_agents enable row level security;
 alter table public.notifications enable row level security;
 
--- Users: anyone can read (public profiles), only owner can update
+-- Users policies
 drop policy if exists "Users viewable by all" on public.users;
 create policy "Users viewable by all"
   on public.users for select using (true);
@@ -169,7 +170,7 @@ drop policy if exists "Users can update own profile" on public.users;
 create policy "Users can update own profile"
   on public.users for update using (auth.uid() = id);
 
--- Projects: freelancer owns; client access by email (future)
+-- Projects policies
 drop policy if exists "Projects viewable by owner" on public.projects;
 create policy "Projects viewable by owner"
   on public.projects for select using (freelancer_id = auth.uid());
@@ -182,55 +183,45 @@ drop policy if exists "Freelancer updates own projects" on public.projects;
 create policy "Freelancer updates own projects"
   on public.projects for update using (freelancer_id = auth.uid());
 
--- Milestones: scoped via project
+-- Milestones policies
 drop policy if exists "Milestones viewable by project owner" on public.milestones;
 create policy "Milestones viewable by project owner"
   on public.milestones for select using (
-    exists (
-      select 1 from public.projects p
-      where p.id = milestones.project_id and p.freelancer_id = auth.uid()
-    )
+    exists (select 1 from public.projects p
+      where p.id = milestones.project_id and p.freelancer_id = auth.uid())
   );
 
 drop policy if exists "Milestones manageable by project owner" on public.milestones;
 create policy "Milestones manageable by project owner"
   on public.milestones for all using (
-    exists (
-      select 1 from public.projects p
-      where p.id = milestones.project_id and p.freelancer_id = auth.uid()
-    )
+    exists (select 1 from public.projects p
+      where p.id = milestones.project_id and p.freelancer_id = auth.uid())
   );
 
--- Transactions: read via project
+-- Transactions policies
 drop policy if exists "Transactions viewable by project owner" on public.transactions;
 create policy "Transactions viewable by project owner"
   on public.transactions for select using (
-    exists (
-      select 1 from public.projects p
-      where p.id = transactions.project_id and p.freelancer_id = auth.uid()
-    )
+    exists (select 1 from public.projects p
+      where p.id = transactions.project_id and p.freelancer_id = auth.uid())
   );
 
--- Agents: via project
+-- Agents policies
 drop policy if exists "Agents viewable by project owner" on public.ai_agents;
 create policy "Agents viewable by project owner"
   on public.ai_agents for select using (
-    exists (
-      select 1 from public.projects p
-      where p.id = ai_agents.project_id and p.freelancer_id = auth.uid()
-    )
+    exists (select 1 from public.projects p
+      where p.id = ai_agents.project_id and p.freelancer_id = auth.uid())
   );
 
 drop policy if exists "Agents manageable by project owner" on public.ai_agents;
 create policy "Agents manageable by project owner"
   on public.ai_agents for all using (
-    exists (
-      select 1 from public.projects p
-      where p.id = ai_agents.project_id and p.freelancer_id = auth.uid()
-    )
+    exists (select 1 from public.projects p
+      where p.id = ai_agents.project_id and p.freelancer_id = auth.uid())
   );
 
--- Notifications: own only
+-- Notifications policies
 drop policy if exists "Own notifications only" on public.notifications;
 create policy "Own notifications only"
   on public.notifications for select using (user_id = auth.uid());
@@ -240,22 +231,50 @@ create policy "Own notifications mark read"
   on public.notifications for update using (user_id = auth.uid());
 
 -- ════════════════════════════════════════════════════════════
---  TRIGGERS
+--  TRIGGER — Auto-create profile on signup (bulletproof v2)
 -- ════════════════════════════════════════════════════════════
 
--- Auto-create profile on signup
 create or replace function public.handle_new_user()
-returns trigger language plpgsql security definer as $$
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_role text;
+  v_name text;
 begin
+  -- Safely extract role — default to 'freelancer' if missing or invalid
+  v_role := coalesce(
+    nullif(trim(new.raw_user_meta_data->>'role'), ''),
+    'freelancer'
+  );
+  -- Only allow valid values
+  if v_role not in ('freelancer', 'client') then
+    v_role := 'freelancer';
+  end if;
+
+  -- Safely extract name
+  v_name := coalesce(
+    nullif(trim(new.raw_user_meta_data->>'full_name'), ''),
+    split_part(coalesce(new.email, ''), '@', 1),
+    'User'
+  );
+
   insert into public.users (id, email, full_name, role)
-  values (
-    new.id,
-    new.email,
-    coalesce(new.raw_user_meta_data->>'full_name', split_part(new.email, '@', 1)),
-    coalesce((new.raw_user_meta_data->>'role')::user_role, 'freelancer')
-  )
-  on conflict (id) do nothing;
+  values (new.id, new.email, v_name, v_role)
+  on conflict (id) do update
+    set
+      email     = excluded.email,
+      full_name = coalesce(public.users.full_name, excluded.full_name),
+      role      = coalesce(public.users.role, excluded.role);
+
   return new;
+exception
+  when others then
+    -- Never block auth even if profile insert fails
+    raise warning 'handle_new_user failed for %: %', new.id, sqlerrm;
+    return new;
 end;
 $$;
 
@@ -264,7 +283,7 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
 
--- updated_at bump
+-- updated_at trigger
 create or replace function public.touch_updated_at()
 returns trigger language plpgsql as $$
 begin
@@ -282,6 +301,6 @@ create trigger projects_touch before update on public.projects
   for each row execute procedure public.touch_updated_at();
 
 -- ════════════════════════════════════════════════════════════
---  DONE!  Verify with:
---   select count(*) from public.users;
+--  DONE! Verify with:
+--    select count(*) from public.users;
 -- ════════════════════════════════════════════════════════════

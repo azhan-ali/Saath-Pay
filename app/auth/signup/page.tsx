@@ -25,21 +25,25 @@ export default function SignupPage() {
     setError(null);
 
     if (!isSupabaseConfigured()) {
-      setError(
-        "Supabase is not configured yet. Add your keys to .env.local (see .env.example) and restart the dev server.",
-      );
+      setError("Supabase is not configured yet. Add your keys to .env.local and restart the dev server.");
       return;
     }
+
+    if (!form.fullName.trim()) { setError("Please enter your full name."); return; }
+    if (!form.email.trim())    { setError("Please enter your email."); return; }
+    if (form.password.length < 6) { setError("Password must be at least 6 characters."); return; }
 
     setLoading(true);
     try {
       const supabase = createClient();
-      const { error: authError } = await supabase.auth.signUp({
-        email: form.email,
+
+      // Step 1: Create auth user
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: form.email.trim(),
         password: form.password,
         options: {
           data: {
-            full_name: form.fullName,
+            full_name: form.fullName.trim(),
             role: form.role,
           },
           emailRedirectTo: `${window.location.origin}/auth/callback`,
@@ -47,13 +51,39 @@ export default function SignupPage() {
       });
 
       if (authError) throw authError;
+      if (!authData.user) throw new Error("Signup failed — no user returned.");
+
+      // Step 2: Manually upsert profile (fallback if trigger didn't fire)
+      // This is safe to call even if trigger already created the row
+      const { error: profileError } = await supabase
+        .from("users")
+        .upsert(
+          {
+            id: authData.user.id,
+            email: form.email.trim(),
+            full_name: form.fullName.trim(),
+            role: form.role,
+          },
+          { onConflict: "id", ignoreDuplicates: false }
+        );
+
+      // Profile error is non-fatal — trigger may have already created it
+      if (profileError) {
+        console.warn("Profile upsert warning (non-fatal):", profileError.message);
+      }
 
       setSuccess(true);
-      // If email confirmation is disabled, user is auto-logged in → push to dashboard
       setTimeout(() => router.push("/dashboard"), 1500);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Something went wrong";
-      setError(message);
+      // Make common errors more readable
+      if (message.includes("already registered") || message.includes("already been registered")) {
+        setError("This email is already registered. Try logging in instead.");
+      } else if (message.includes("Password should be")) {
+        setError("Password must be at least 6 characters.");
+      } else {
+        setError(message);
+      }
     } finally {
       setLoading(false);
     }
@@ -66,14 +96,9 @@ export default function SignupPage() {
       className="w-full max-w-md"
     >
       <div className="sketch-card bg-paper relative" style={{ transform: "rotate(-0.5deg)" }}>
-        {/* Washi tape on top */}
         <div
           className="tape"
-          style={{
-            top: "-10px",
-            left: "50%",
-            transform: "translateX(-50%) rotate(-3deg)",
-          }}
+          style={{ top: "-10px", left: "50%", transform: "translateX(-50%) rotate(-3deg)" }}
         />
 
         <div className="text-center mb-6">
@@ -91,7 +116,7 @@ export default function SignupPage() {
         {success ? (
           <div className="text-center py-6">
             <div className="text-5xl mb-2">🎉</div>
-            <p className="font-[family-name:var(--font-marker)] text-xl">Account created!</p>
+            <p className="font-[family-name:var(--font-marker)] text-2xl text-ink">Account created!</p>
             <p className="font-[family-name:var(--font-body)] text-ink-soft mt-2">
               Redirecting to dashboard…
             </p>
@@ -109,20 +134,19 @@ export default function SignupPage() {
                     key={role}
                     type="button"
                     onClick={() => setForm({ ...form, role })}
-                    className={`rough-box py-3 font-[family-name:var(--font-marker)] text-lg transition-all ${
+                    className={`rough-box py-3 font-[family-name:var(--font-marker)] text-base transition-all ${
                       form.role === role
                         ? "bg-accent-yellow shadow-[3px_3px_0_#1a1a1a]"
-                        : "bg-paper"
+                        : "bg-paper hover:bg-paper-dark"
                     }`}
                   >
-                    <Briefcase size={18} className="inline mr-1" />
+                    <Briefcase size={16} className="inline mr-1" />
                     {role === "freelancer" ? "Freelancer" : "Client"}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Name */}
             <InputField
               icon={<UserIcon size={18} />}
               type="text"
@@ -131,8 +155,6 @@ export default function SignupPage() {
               onChange={(v) => setForm({ ...form, fullName: v })}
               required
             />
-
-            {/* Email */}
             <InputField
               icon={<Mail size={18} />}
               type="email"
@@ -141,8 +163,6 @@ export default function SignupPage() {
               onChange={(v) => setForm({ ...form, email: v })}
               required
             />
-
-            {/* Password */}
             <InputField
               icon={<Lock size={18} />}
               type="password"
@@ -154,8 +174,8 @@ export default function SignupPage() {
             />
 
             {error && (
-              <div className="rough-box bg-red-50 p-3 font-[family-name:var(--font-sketch)] text-sm text-red-800">
-                {error}
+              <div className="rough-box bg-red-50 border-red-300 p-3 font-[family-name:var(--font-sketch)] text-sm text-red-800">
+                ⚠ {error}
               </div>
             )}
 
@@ -165,10 +185,7 @@ export default function SignupPage() {
               className="sketch-btn sketch-btn-orange w-full disabled:opacity-60"
             >
               {loading ? (
-                <>
-                  <Loader2 size={18} className="mr-2 animate-spin" />
-                  Creating account…
-                </>
+                <><Loader2 size={18} className="mr-2 animate-spin" /> Creating account…</>
               ) : (
                 "Create Account →"
               )}
@@ -188,13 +205,7 @@ export default function SignupPage() {
 }
 
 function InputField({
-  icon,
-  type,
-  placeholder,
-  value,
-  onChange,
-  required,
-  minLength,
+  icon, type, placeholder, value, onChange, required, minLength,
 }: {
   icon: React.ReactNode;
   type: string;
@@ -206,9 +217,7 @@ function InputField({
 }) {
   return (
     <div className="relative">
-      <div className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-soft">
-        {icon}
-      </div>
+      <div className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-soft">{icon}</div>
       <input
         type={type}
         placeholder={placeholder}
@@ -216,7 +225,7 @@ function InputField({
         onChange={(e) => onChange(e.target.value)}
         required={required}
         minLength={minLength}
-        className="w-full pl-12 pr-4 py-3 rough-box bg-paper font-[family-name:var(--font-body)] text-lg text-ink placeholder:text-ink-soft/50 focus:outline-none focus:shadow-[4px_4px_0_#1a1a1a] transition-shadow"
+        className="w-full pl-12 pr-4 py-3 rough-box bg-paper font-[family-name:var(--font-body)] text-base text-ink placeholder:text-ink-soft/50 focus:outline-none focus:shadow-[4px_4px_0_#1a1a1a] transition-shadow"
       />
     </div>
   );

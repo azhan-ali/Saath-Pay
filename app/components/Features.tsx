@@ -119,15 +119,15 @@ const features = [
 
 export default function Features() {
   return (
-    <section id="features" className="py-24 px-4 relative">
+    <section id="features" className="py-14 px-4 relative">
       <div className="max-w-7xl mx-auto">
         {/* Section header */}
-        <div className="text-center mb-16">
+        <div className="text-center mb-10">
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="font-[family-name:var(--font-hand)] text-2xl text-accent-orange mb-2"
+            className="font-[family-name:var(--font-hand)] text-lg text-accent-orange mb-1"
           >
             ~ what makes us different ~
           </motion.p>
@@ -136,7 +136,7 @@ export default function Features() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.1 }}
-            className="font-[family-name:var(--font-marker)] text-4xl md:text-6xl text-ink mb-4"
+            className="font-[family-name:var(--font-marker)] text-3xl md:text-4xl text-ink mb-3"
           >
             Everything you need.{" "}
             <span className="squiggle squiggle-green">Nothing you don&apos;t.</span>
@@ -146,7 +146,7 @@ export default function Features() {
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
             transition={{ delay: 0.2 }}
-            className="font-[family-name:var(--font-body)] text-lg text-ink-soft max-w-2xl mx-auto"
+            className="font-[family-name:var(--font-body)] text-sm text-ink-soft max-w-2xl mx-auto"
           >
             11 features designed to fix the broken payment experience for{" "}
             <span className="highlight">Indian freelancers</span> working with
@@ -175,15 +175,15 @@ export default function Features() {
 
                 {/* Icon */}
                 <div
-                  className={`inline-flex h-14 w-14 items-center justify-center rounded-[14px_17px_15px_18px] ${f.iconBg} border-[2.5px] border-ink shadow-[3px_3px_0_#1a1a1a] mb-4`}
+                  className={`inline-flex h-11 w-11 items-center justify-center rounded-[14px_17px_15px_18px] ${f.iconBg} border-[2.5px] border-ink shadow-[3px_3px_0_#1a1a1a] mb-3`}
                 >
-                  <Icon size={26} className="text-white" strokeWidth={2.5} />
+                  <Icon size={22} className="text-white" strokeWidth={2.5} />
                 </div>
 
-                <h3 className="font-[family-name:var(--font-marker)] text-2xl text-ink mb-2">
+                <h3 className="font-[family-name:var(--font-marker)] text-xl text-ink mb-1">
                   {f.title}
                 </h3>
-                <p className="font-[family-name:var(--font-body)] text-base text-ink-soft leading-relaxed">
+                <p className="font-[family-name:var(--font-body)] text-sm text-ink-soft leading-relaxed">
                   {f.desc}
                 </p>
               </motion.div>

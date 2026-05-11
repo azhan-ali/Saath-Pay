@@ -9,15 +9,19 @@ import {
   Bot,
   BarChart3,
   Settings,
+  Wallet,
+  Sparkles,
 } from "lucide-react";
 
 const links = [
-  { href: "/dashboard",          label: "Overview",   icon: LayoutDashboard },
-  { href: "/dashboard/projects", label: "Projects",   icon: FolderOpen      },
-  { href: "/dashboard/projects/new", label: "New Project", icon: PlusCircle  },
-  { href: "/dashboard/agents",   label: "AI Agents",  icon: Bot             },
-  { href: "/dashboard/analytics",label: "Analytics",  icon: BarChart3       },
-  { href: "/dashboard/settings", label: "Settings",   icon: Settings        },
+  { href: "/dashboard",              label: "Overview",    icon: LayoutDashboard },
+  { href: "/dashboard/projects",     label: "Projects",    icon: FolderOpen      },
+  { href: "/dashboard/projects/new", label: "New Project", icon: PlusCircle      },
+  { href: "/dashboard/wallet",       label: "Wallet",      icon: Wallet          },
+  { href: "/dashboard/ai-test",      label: "AI Generator",icon: Sparkles        },
+  { href: "/dashboard/agents",       label: "AI Agents",   icon: Bot             },
+  { href: "/dashboard/analytics",    label: "Analytics",   icon: BarChart3       },
+  { href: "/dashboard/settings",     label: "Settings",    icon: Settings        },
 ];
 
 export default function Sidebar() {

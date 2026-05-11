@@ -1,4 +1,4 @@
-import type { ReactNode } from "next";
+import type { ReactNode } from "react";
 import AnimatedBackground from "../components/AnimatedBackground";
 import CustomCursor from "../components/CustomCursor";
 import Link from "next/link";

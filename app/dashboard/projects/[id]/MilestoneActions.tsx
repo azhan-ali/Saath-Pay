@@ -3,16 +3,24 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { Upload, CheckCircle2, Loader2 } from "lucide-react";
+import {
+  Upload,
+  CheckCircle2,
+  Loader2,
+  ExternalLink,
+  Zap,
+  AlertCircle,
+} from "lucide-react";
 
 type MilestoneStatus = "pending" | "submitted" | "approved" | "paid" | "rejected";
 
 /**
  * Action buttons for a milestone card.
- * - Freelancer: "Submit Proof" (pending → submitted)
- * - Client/Freelancer: "Approve" (submitted → approved → paid)
- *   In Phase 3 this will trigger the on-chain smart contract.
- *   For now it updates the DB status directly.
+ *
+ * Phase 3 upgrade:
+ * - "Approve & Release" now calls /api/solana/approve-milestone
+ * - Real Solana TX hash is saved and shown with explorer link
+ * - Demo mode badge shown when program not deployed yet
  */
 export default function MilestoneActions({
   milestoneId,
@@ -28,11 +36,21 @@ export default function MilestoneActions({
   const [proofUrl, setProofUrl] = useState("");
   const [showProofInput, setShowProofInput] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [txResult, setTxResult] = useState<{
+    txHash: string;
+    explorerUrl: string;
+    demoMode: boolean;
+    amountReleased: number;
+  } | null>(null);
 
   const supabase = createClient();
 
+  // ── Submit proof (DB only — no on-chain action needed) ──────────────────
   const submitProof = async () => {
-    if (!proofUrl.trim()) { setError("Enter a proof URL (GitHub, Figma, Loom, etc.)"); return; }
+    if (!proofUrl.trim()) {
+      setError("Enter a proof URL (GitHub, Figma, Loom, etc.)");
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -54,27 +72,31 @@ export default function MilestoneActions({
     }
   };
 
+  // ── Approve milestone — calls on-chain API ──────────────────────────────
   const approveMilestone = async () => {
     setLoading(true);
     setError(null);
-    try {
-      const { error: err } = await supabase
-        .from("milestones")
-        .update({
-          status: "paid",
-          approved_at: new Date().toISOString(),
-          paid_at: new Date().toISOString(),
-          // solana_tx_hash will be filled in Phase 3
-        })
-        .eq("id", milestoneId);
-      if (err) throw err;
+    setTxResult(null);
 
-      // Also update project status to in_progress if not already
-      await supabase
-        .from("projects")
-        .update({ status: "in_progress" })
-        .eq("id", projectId)
-        .eq("status", "funded");
+    try {
+      const res = await fetch("/api/solana/approve-milestone", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ milestoneId, projectId }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error ?? "Approval failed");
+      }
+
+      setTxResult({
+        txHash: data.txHash,
+        explorerUrl: data.explorerUrl,
+        demoMode: data.demoMode,
+        amountReleased: data.amountReleased,
+      });
 
       router.refresh();
     } catch (e) {
@@ -84,6 +106,7 @@ export default function MilestoneActions({
     }
   };
 
+  // ── Paid state ──────────────────────────────────────────────────────────
   if (status === "paid") {
     return (
       <div className="mt-3 flex items-center gap-2 font-[family-name:var(--font-sketch)] text-sm text-accent-green">
@@ -95,21 +118,52 @@ export default function MilestoneActions({
 
   return (
     <div className="mt-3 space-y-2">
+      {/* Error */}
       {error && (
-        <p className="font-[family-name:var(--font-sketch)] text-xs text-red-600">{error}</p>
+        <div className="flex items-center gap-2 font-[family-name:var(--font-sketch)] text-xs text-red-600">
+          <AlertCircle size={14} />
+          {error}
+        </div>
+      )}
+
+      {/* TX success banner */}
+      {txResult && (
+        <div className="rough-box bg-green-50 p-3 space-y-1">
+          <div className="flex items-center gap-2 font-[family-name:var(--font-sketch)] text-sm text-green-800">
+            <Zap size={14} />
+            <span>
+              ${txResult.amountReleased} USDC released
+              {txResult.demoMode && (
+                <span className="ml-2 px-1.5 py-0.5 bg-yellow-100 text-yellow-800 text-xs rounded">
+                  demo mode
+                </span>
+              )}
+            </span>
+          </div>
+          {txResult.explorerUrl && (
+            <a
+              href={txResult.explorerUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1 font-[family-name:var(--font-sketch)] text-xs text-accent-blue hover:underline"
+            >
+              <ExternalLink size={12} /> View on Solana Explorer
+            </a>
+          )}
+        </div>
       )}
 
       {/* Pending → Submit proof */}
       {status === "pending" && (
         <>
           {showProofInput ? (
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <input
                 type="url"
                 placeholder="https://github.com/… or Figma/Loom link"
                 value={proofUrl}
                 onChange={(e) => setProofUrl(e.target.value)}
-                className="sketch-input !py-2 !text-sm flex-1"
+                className="sketch-input !py-2 !text-sm flex-1 min-w-0"
               />
               <button
                 onClick={submitProof}
@@ -136,23 +190,28 @@ export default function MilestoneActions({
         </>
       )}
 
-      {/* Submitted → Approve (simulates client approval; Phase 3 adds on-chain) */}
+      {/* Submitted → Approve (triggers on-chain USDC release) */}
       {status === "submitted" && (
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex gap-2 flex-wrap items-center">
           <button
             onClick={approveMilestone}
             disabled={loading}
             className="sketch-btn sketch-btn-green !px-4 !py-2 !text-sm inline-flex items-center gap-2 disabled:opacity-60"
           >
             {loading ? (
-              <Loader2 size={14} className="animate-spin" />
+              <>
+                <Loader2 size={14} className="animate-spin" />
+                Releasing on Solana…
+              </>
             ) : (
-              <CheckCircle2 size={14} />
+              <>
+                <Zap size={14} />
+                Approve & Release USDC
+              </>
             )}
-            Approve & Release Payment
           </button>
           <p className="w-full font-[family-name:var(--font-hand)] text-xs text-ink-soft">
-            ⚡ Phase 3: this will trigger on-chain USDC release via Solana smart contract.
+            ⚡ Triggers on-chain USDC release via Solana smart contract.
           </p>
         </div>
       )}

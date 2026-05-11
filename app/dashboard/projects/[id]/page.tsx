@@ -7,11 +7,14 @@ import {
   Clock,
   Upload,
   ExternalLink,
-  Zap,
 } from "lucide-react";
 import SketchBadge from "@/app/components/SketchBadge";
 import MilestoneActions from "./MilestoneActions";
-import CopyButton from "./CopyButton";
+import EscrowPanel from "./EscrowPanel";
+import DodoCheckoutPanel from "./DodoCheckoutPanel";
+import AgentsPanel from "./AgentsPanel";
+import ProjectTabs from "./ProjectTabs";
+import { isDodoConfigured } from "@/lib/dodo/client";
 
 type MilestoneStatus = "pending" | "submitted" | "approved" | "paid" | "rejected";
 type ProjectStatus = "draft" | "awaiting_payment" | "funded" | "in_progress" | "completed" | "disputed" | "refunded";
@@ -27,11 +30,11 @@ const milestoneStatusConfig: Record<MilestoneStatus, { label: string; color: "in
 const projectStatusConfig: Record<ProjectStatus, { label: string; color: "ink" | "yellow" | "orange" | "green" | "blue" | "red" | "pink" | "purple" }> = {
   draft:            { label: "Draft",            color: "ink"    },
   awaiting_payment: { label: "Awaiting Payment", color: "yellow" },
-  funded:           { label: "Funded",           color: "blue"   },
+  funded:           { label: "Funded ✓",         color: "blue"   },
   in_progress:      { label: "In Progress",      color: "orange" },
-  completed:        { label: "Completed",        color: "green"  },
-  disputed:         { label: "Disputed",         color: "red"    },
-  refunded:         { label: "Refunded",         color: "ink"    },
+  completed:        { label: "Completed ✓",      color: "green"  },
+  disputed:         { label: "Disputed ⚠",       color: "red"    },
+  refunded:         { label: "Refunded",          color: "ink"    },
 };
 
 export default async function ProjectDetailPage({
@@ -39,40 +42,50 @@ export default async function ProjectDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ created?: string }>;
+  searchParams: Promise<{ created?: string; tab?: string }>;
 }) {
   if (!isSupabaseConfigured()) redirect("/dashboard");
 
   const { id } = await params;
-  const { created } = await searchParams;
+  const { created, tab } = await searchParams;
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/auth/login");
 
-  const { data: project } = await supabase
-    .from("projects")
-    .select(`
-      *,
-      milestones(*)
-    `)
-    .eq("id", id)
-    .eq("freelancer_id", user.id)
-    .single();
+  // Fetch project + milestones + agents in parallel
+  const [projectRes, agentsRes] = await Promise.all([
+    supabase
+      .from("projects")
+      .select(`*, milestones(*)`)
+      .eq("id", id)
+      .eq("freelancer_id", user.id)
+      .single(),
+    supabase
+      .from("ai_agents")
+      .select("*")
+      .eq("project_id", id)
+      .order("created_at", { ascending: true }),
+  ]);
 
-  if (!project) notFound();
+  if (!projectRes.data) notFound();
+  const project = projectRes.data;
+  const agents = agentsRes.data ?? [];
 
   const milestones = (project.milestones ?? []).sort(
     (a: { index: number }, b: { index: number }) => a.index - b.index,
   );
 
   const paidCount = milestones.filter((m: { status: string }) => m.status === "paid").length;
+  const paidAmount = milestones
+    .filter((m: { status: string }) => m.status === "paid")
+    .reduce((sum: number, m: { amount: number }) => sum + Number(m.amount), 0);
   const pct = milestones.length > 0 ? Math.round((paidCount / milestones.length) * 100) : 0;
   const pCfg = projectStatusConfig[project.status as ProjectStatus] ?? projectStatusConfig.draft;
 
-  const paymentLink = project.dodo_checkout_url
-    ? project.dodo_checkout_url
-    : `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/pay/${project.id}`;
+  const solanaNetwork = process.env.NEXT_PUBLIC_SOLANA_NETWORK ?? "devnet";
+  const dodoConfigured = isDodoConfigured();
+  const activeTab = tab ?? "milestones";
 
   return (
     <div className="space-y-6">
@@ -131,33 +144,33 @@ export default async function ProjectDetailPage({
         </div>
       </div>
 
-      {/* Payment link */}
-      <div className="sketch-card sketch-card-yellow relative">
-        <div className="tape" style={{ top: "-10px", left: "20px", transform: "rotate(-3deg)" }} />
-        <h2 className="font-[family-name:var(--font-marker)] text-xl mb-2 flex items-center gap-2">
-          <Zap size={20} /> Payment Link
-        </h2>
-        <p className="font-[family-name:var(--font-body)] text-sm text-ink-soft mb-3">
-          Share this with your client. They pay via Dodo (card/UPI) → funds lock on Solana.
-        </p>
-        <div className="flex gap-2">
-          <code className="flex-1 rough-box bg-paper px-3 py-2 font-mono text-sm text-ink truncate">
-            {paymentLink}
-          </code>
-          <CopyButton text={paymentLink} />
-        </div>
-        {!project.dodo_checkout_url && (
-          <p className="mt-2 font-[family-name:var(--font-hand)] text-xs text-ink-soft">
-            ⚡ Real Dodo checkout URL will appear here after Phase 4 integration.
-          </p>
-        )}
+      {/* Escrow + Payment panels */}
+      <div className="grid md:grid-cols-2 gap-4">
+        <EscrowPanel
+          projectId={project.id}
+          projectStatus={project.status}
+          totalAmount={Number(project.total_amount)}
+          paidAmount={paidAmount}
+          vaultAddress={project.escrow_pda}
+          solanaNetwork={solanaNetwork}
+        />
+        <DodoCheckoutPanel
+          projectId={project.id}
+          checkoutUrl={project.dodo_checkout_url}
+          projectStatus={project.status}
+          isDodoConfigured={dodoConfigured}
+        />
       </div>
 
-      {/* Milestones */}
-      <div>
-        <h2 className="font-[family-name:var(--font-marker)] text-2xl text-ink mb-4">
-          🎯 Milestones
-        </h2>
+      {/* Tabs: Milestones | Agents */}
+      <ProjectTabs
+        activeTab={activeTab}
+        projectId={project.id}
+        agentCount={agents.length}
+      />
+
+      {/* Tab content */}
+      {activeTab === "milestones" && (
         <div className="space-y-4">
           {milestones.map((m: {
             id: string;
@@ -213,38 +226,27 @@ export default async function ProjectDetailPage({
                   </div>
                 </div>
 
-                {/* Proof link */}
                 {m.proof_uri && (
-                  <a
-                    href={m.proof_uri}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1 font-[family-name:var(--font-sketch)] text-sm text-accent-blue hover:underline mb-2"
-                  >
+                  <a href={m.proof_uri} target="_blank" rel="noreferrer"
+                    className="inline-flex items-center gap-1 font-[family-name:var(--font-sketch)] text-sm text-accent-blue hover:underline mb-2">
                     <Upload size={14} /> View proof <ExternalLink size={12} />
                   </a>
                 )}
 
-                {/* Solana TX */}
                 {m.solana_tx_hash && (
-                  <a
-                    href={`https://explorer.solana.com/tx/${m.solana_tx_hash}?cluster=devnet`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1 font-[family-name:var(--font-sketch)] text-xs text-accent-green hover:underline mb-2"
-                  >
+                  <a href={`https://explorer.solana.com/tx/${m.solana_tx_hash}?cluster=devnet`}
+                    target="_blank" rel="noreferrer"
+                    className="inline-flex items-center gap-1 font-[family-name:var(--font-sketch)] text-xs text-accent-green hover:underline mb-2">
                     <ExternalLink size={12} /> View on Solana Explorer
                   </a>
                 )}
 
-                {/* Timestamps */}
                 <div className="flex flex-wrap gap-3 font-[family-name:var(--font-hand)] text-xs text-ink-soft">
                   {m.submitted_at && <span>Submitted: {new Date(m.submitted_at).toLocaleDateString()}</span>}
                   {m.approved_at && <span>Approved: {new Date(m.approved_at).toLocaleDateString()}</span>}
                   {m.paid_at && <span>Paid: {new Date(m.paid_at).toLocaleDateString()}</span>}
                 </div>
 
-                {/* Action buttons (client component) */}
                 <MilestoneActions
                   milestoneId={m.id}
                   projectId={project.id}
@@ -254,9 +256,16 @@ export default async function ProjectDetailPage({
             );
           })}
         </div>
-      </div>
+      )}
 
-      {/* Project description */}
+      {activeTab === "agents" && (
+        <AgentsPanel
+          projectId={project.id}
+          projectStatus={project.status}
+          initialAgents={agents}
+        />
+      )}
+
       {project.description && (
         <div className="sketch-card sketch-card-blue">
           <h3 className="font-[family-name:var(--font-marker)] text-lg mb-2">📄 Description</h3>
@@ -266,5 +275,3 @@ export default async function ProjectDetailPage({
     </div>
   );
 }
-
-// ── Copy button is extracted to CopyButton.tsx ───────────────────────────────

@@ -5,7 +5,7 @@ import { ArrowRight, Sparkles, Zap } from "lucide-react";
 
 export default function Hero() {
   return (
-    <section className="relative pt-32 pb-20 px-4 overflow-hidden">
+    <section className="relative pt-28 pb-10 px-4 overflow-hidden">
       {/* Decorative background sketches */}
       <div className="absolute inset-0 pointer-events-none">
         {/* Star doodle top-left */}
@@ -87,7 +87,7 @@ export default function Hero() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="flex justify-center mb-8"
+          className="flex justify-center mb-5"
         >
           <div className="inline-flex items-center gap-2 px-4 py-2 rough-box bg-accent-yellow shadow-[3px_3px_0_#1a1a1a]">
             <Sparkles size={18} className="text-ink" />
@@ -102,7 +102,7 @@ export default function Hero() {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3, duration: 0.7 }}
-          className="text-center font-[family-name:var(--font-marker)] text-5xl sm:text-6xl md:text-7xl lg:text-8xl text-ink leading-[1.05] mb-6"
+          className="text-center font-[family-name:var(--font-marker)] text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-ink leading-[1.1] mb-4"
         >
           Get Paid in{" "}
           <span className="inline-block relative">
@@ -121,9 +121,9 @@ export default function Hero() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
-          className="text-center font-[family-name:var(--font-body)] text-xl md:text-2xl text-ink-soft max-w-3xl mx-auto mb-4"
+          className="text-center font-[family-name:var(--font-body)] text-base md:text-lg text-ink-soft max-w-3xl mx-auto mb-3"
         >
-          <span className="font-[family-name:var(--font-hand)] text-3xl md:text-4xl text-accent-orange">
+          <span className="font-[family-name:var(--font-hand)] text-2xl md:text-3xl text-accent-orange">
             Saath Kaam, Saath Payment
           </span>
         </motion.p>
@@ -132,7 +132,7 @@ export default function Hero() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6 }}
-          className="text-center font-[family-name:var(--font-body)] text-lg md:text-xl text-ink-soft max-w-2xl mx-auto mb-10"
+          className="text-center font-[family-name:var(--font-body)] text-sm md:text-base text-ink-soft max-w-2xl mx-auto mb-7"
         >
           Programmable stablecoin payment rails for Indian freelancers, SMEs &
           AI agents.{" "}
@@ -145,7 +145,7 @@ export default function Hero() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.7 }}
-          className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16"
+          className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-10"
         >
           <a href="#signup" className="sketch-btn sketch-btn-orange group">
             <span>Start Getting Paid</span>
@@ -178,13 +178,13 @@ export default function Hero() {
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 1 + i * 0.1 }}
-              className={`sketch-card ${stat.color} text-center`}
+              className={`sketch-card ${stat.color} text-center py-3`}
               style={{ transform: `rotate(${i % 2 === 0 ? -1.5 : 1.5}deg)` }}
             >
-              <div className="font-[family-name:var(--font-marker)] text-3xl md:text-4xl text-ink">
+              <div className="font-[family-name:var(--font-marker)] text-2xl md:text-3xl text-ink">
                 {stat.value}
               </div>
-              <div className="font-[family-name:var(--font-hand)] text-lg text-ink-soft mt-1">
+              <div className="font-[family-name:var(--font-hand)] text-sm text-ink-soft mt-1">
                 {stat.label}
               </div>
             </motion.div>
@@ -196,7 +196,7 @@ export default function Hero() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1, y: [0, 10, 0] }}
           transition={{ delay: 1.5, y: { duration: 2, repeat: Infinity } }}
-          className="flex justify-center mt-16"
+          className="flex justify-center mt-8"
         >
           <div className="font-[family-name:var(--font-hand)] text-ink-soft flex flex-col items-center gap-1">
             <span>scroll down</span>

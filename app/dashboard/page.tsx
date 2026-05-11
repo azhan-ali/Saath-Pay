@@ -106,7 +106,7 @@ export default async function DashboardPage() {
         style={{ transform: "rotate(-0.3deg)" }}
       >
         <div className="absolute -top-3 left-6 px-3 py-1 bg-accent-green text-white font-[family-name:var(--font-sketch)] text-sm rounded-[8px_10px_9px_11px] shadow-[2px_2px_0_#1a1a1a]">
-          ✅ Phase 1 complete
+          ✅ Phase 7 complete
         </div>
         <div className="flex flex-col md:flex-row items-start gap-4">
           <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-[16px_20px_18px_22px] bg-accent-yellow border-[3px] border-ink shadow-[3px_3px_0_#1a1a1a]">
@@ -114,68 +114,68 @@ export default async function DashboardPage() {
           </div>
           <div className="flex-1">
             <h2 className="font-[family-name:var(--font-marker)] text-2xl text-ink mb-1">
-              You&apos;re all set up!
+              Full stack complete!
             </h2>
             <p className="font-[family-name:var(--font-body)] text-ink-soft mb-3">
-              Authentication ✓ · Database ✓ · Wallet connect ✓ — the foundation
-              is solid. Next up: project creation, on-chain escrow, and Dodo
-              checkout.
+              Auth ✓ · DB ✓ · Wallet ✓ · Escrow ✓ · Stripe ✓ · Gemini AI ✓ · x402 Agents ✓ · Notifications ✓ · Analytics ✓
             </p>
             <div className="flex flex-wrap gap-2 font-[family-name:var(--font-sketch)] text-sm">
-              <span className="highlight-green">Phase 2: Dashboard UI</span>
-              <span className="highlight">Phase 3: Solana contract</span>
-              <span className="highlight-pink">Phase 4: Dodo integration</span>
+              <span className="highlight-green">Phase 1–7: Done ✓</span>
+              <span className="highlight">Phase 8: Deploy + Submit</span>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-4">
+      <div className="grid md:grid-cols-3 gap-4">
         <Link
-          href="/dashboard"
+          href="/dashboard/projects/new"
           className="sketch-card sketch-card-orange relative group block"
           style={{ transform: "rotate(-0.5deg)" }}
         >
-          <div className="absolute -top-3 -right-3 px-3 py-1 bg-ink text-paper font-[family-name:var(--font-sketch)] text-xs rounded-[8px_10px_9px_11px]">
-            Coming in Phase 2
-          </div>
           <h3 className="font-[family-name:var(--font-marker)] text-2xl mb-2">
             📝 Create Project
           </h3>
           <p className="font-[family-name:var(--font-body)] text-ink-soft mb-3">
-            Build a new project with AI-generated milestones, send the payment
-            link to your client, and get paid when work is approved.
+            AI-generated milestones, Stripe checkout, Solana escrow — all in one flow.
           </p>
           <span className="font-[family-name:var(--font-sketch)] text-sm inline-flex items-center gap-1">
-            Unlocks next{" "}
-            <ArrowRight
-              size={14}
-              className="group-hover:translate-x-1 transition-transform"
-            />
+            Start now{" "}
+            <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
           </span>
         </Link>
 
         <Link
-          href="/dashboard"
-          className="sketch-card sketch-card-purple relative group block"
-          style={{ transform: "rotate(0.5deg)" }}
+          href="/dashboard/analytics"
+          className="sketch-card sketch-card-blue relative group block"
+          style={{ transform: "rotate(0.3deg)" }}
         >
-          <div className="absolute -top-3 -right-3 px-3 py-1 bg-ink text-paper font-[family-name:var(--font-sketch)] text-xs rounded-[8px_10px_9px_11px]">
-            Coming in Phase 6
-          </div>
           <h3 className="font-[family-name:var(--font-marker)] text-2xl mb-2">
-            🤖 Add AI Agents
+            📊 Analytics
           </h3>
           <p className="font-[family-name:var(--font-body)] text-ink-soft mb-3">
-            Hire AI agents for sub-tasks. They earn autonomous micropayments
-            via x402 protocol on Solana.
+            Earnings, pending payouts, transaction history, and settlement speed stats.
           </p>
           <span className="font-[family-name:var(--font-sketch)] text-sm inline-flex items-center gap-1">
-            Unlocks later{" "}
-            <ArrowRight
-              size={14}
-              className="group-hover:translate-x-1 transition-transform"
-            />
+            View stats{" "}
+            <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+          </span>
+        </Link>
+
+        <Link
+          href="/dashboard/wallet"
+          className="sketch-card sketch-card-green relative group block"
+          style={{ transform: "rotate(-0.3deg)" }}
+        >
+          <h3 className="font-[family-name:var(--font-marker)] text-2xl mb-2">
+            🔐 Solana Wallet
+          </h3>
+          <p className="font-[family-name:var(--font-body)] text-ink-soft mb-3">
+            View wallet balance, get devnet SOL, and see escrow vault details.
+          </p>
+          <span className="font-[family-name:var(--font-sketch)] text-sm inline-flex items-center gap-1">
+            View wallet{" "}
+            <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
           </span>
         </Link>
       </div>

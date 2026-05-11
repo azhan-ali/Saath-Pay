@@ -16,14 +16,14 @@ const rows = [
 
 export default function Comparison() {
   return (
-    <section id="why" className="py-24 px-4 relative">
+    <section id="why" className="py-14 px-4 relative">
       <div className="max-w-5xl mx-auto">
-        <div className="text-center mb-14">
+        <div className="text-center mb-8">
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="font-[family-name:var(--font-hand)] text-2xl text-accent-pink mb-2"
+            className="font-[family-name:var(--font-hand)] text-lg text-accent-pink mb-1"
           >
             ~ the honest comparison ~
           </motion.p>
@@ -32,7 +32,7 @@ export default function Comparison() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.1 }}
-            className="font-[family-name:var(--font-marker)] text-4xl md:text-6xl text-ink mb-4"
+            className="font-[family-name:var(--font-marker)] text-3xl md:text-4xl text-ink mb-3"
           >
             SaathPay vs.{" "}
             <span className="text-stroke">the old way</span>
@@ -49,13 +49,13 @@ export default function Comparison() {
             <table className="w-full">
               <thead>
                 <tr className="border-b-[3px] border-dashed border-ink">
-                  <th className="text-left py-4 px-4 font-[family-name:var(--font-marker)] text-lg">
+                  <th className="text-left py-3 px-4 font-[family-name:var(--font-marker)] text-base">
                     Feature
                   </th>
-                  <th className="text-left py-4 px-4 font-[family-name:var(--font-marker)] text-lg text-accent-green">
+                  <th className="text-left py-3 px-4 font-[family-name:var(--font-marker)] text-base text-accent-green">
                     SaathPay 🇮🇳
                   </th>
-                  <th className="text-left py-4 px-4 font-[family-name:var(--font-marker)] text-lg text-ink-soft">
+                  <th className="text-left py-3 px-4 font-[family-name:var(--font-marker)] text-base text-ink-soft">
                     Banks / PayPal / Wire
                   </th>
                 </tr>
@@ -66,18 +66,18 @@ export default function Comparison() {
                     key={r.label}
                     className="border-b border-dashed border-ink/30 last:border-0"
                   >
-                    <td className="py-4 px-4 font-[family-name:var(--font-body)] text-base text-ink">
+                    <td className="py-3 px-4 font-[family-name:var(--font-body)] text-sm text-ink">
                       {r.label}
                     </td>
-                    <td className="py-4 px-4">
-                      <span className="inline-flex items-center gap-2 font-[family-name:var(--font-sketch)] text-base font-bold text-accent-green">
-                        <Check size={18} strokeWidth={3} />
+                    <td className="py-3 px-4">
+                      <span className="inline-flex items-center gap-1.5 font-[family-name:var(--font-sketch)] text-sm font-bold text-accent-green">
+                        <Check size={15} strokeWidth={3} />
                         {r.saath}
                       </span>
                     </td>
-                    <td className="py-4 px-4">
-                      <span className="inline-flex items-center gap-2 font-[family-name:var(--font-sketch)] text-base text-ink-soft">
-                        <X size={18} strokeWidth={3} className="text-red-500" />
+                    <td className="py-3 px-4">
+                      <span className="inline-flex items-center gap-1.5 font-[family-name:var(--font-sketch)] text-sm text-ink-soft">
+                        <X size={15} strokeWidth={3} className="text-red-500" />
                         {r.others}
                       </span>
                     </td>

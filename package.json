@@ -8,6 +8,7 @@
     "start": "next start"
   },
   "dependencies": {
+    "@solana/spl-token": "0.4.14",
     "@solana/wallet-adapter-base": "^0.9.27",
     "@solana/wallet-adapter-react": "^0.15.39",
     "@solana/wallet-adapter-react-ui": "^0.9.39",
@@ -16,11 +17,13 @@
     "@supabase/ssr": "^0.10.3",
     "@supabase/supabase-js": "^2.105.4",
     "bs58": "^6.0.0",
+    "dodopayments": "2.31.1",
     "framer-motion": "^12.38.0",
     "lucide-react": "^1.14.0",
     "next": "16.2.6",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "stripe": "22.1.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

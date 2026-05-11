@@ -25,11 +25,11 @@ export default function Navbar() {
     if (!isSupabaseConfigured()) return;
     const supabase = createClient();
 
-    supabase.auth.getUser().then(({ data }) => setUser(data.user ?? null));
+    supabase.auth.getUser().then(({ data }: { data: { user: import("@supabase/supabase-js").User | null } }) => setUser(data.user ?? null));
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((_event: string, session: import("@supabase/supabase-js").Session | null) => {
       setUser(session?.user ?? null);
     });
 
@@ -78,10 +78,10 @@ export default function Navbar() {
                 </span>
               </div>
             </div>
-            <span className="font-[family-name:var(--font-marker)] text-2xl text-ink">
+            <span className="font-[family-name:var(--font-marker)] text-xl text-ink">
               SaathPay
             </span>
-            <span className="ml-1 text-lg">🇮🇳</span>
+            <span className="ml-1 text-base">🇮🇳</span>
           </Link>
 
           {/* Desktop nav */}
@@ -90,7 +90,7 @@ export default function Navbar() {
               <a
                 key={link.href}
                 href={link.href}
-                className="font-[family-name:var(--font-sketch)] text-lg text-ink hover:text-accent-orange transition-colors relative group"
+                className="font-[family-name:var(--font-sketch)] text-sm text-ink hover:text-accent-orange transition-colors relative group"
               >
                 {link.label}
                 <span className="absolute left-0 right-0 -bottom-1 h-[3px] bg-accent-yellow scale-x-0 group-hover:scale-x-100 transition-transform origin-left rounded-full" />
