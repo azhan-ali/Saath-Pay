@@ -67,7 +67,7 @@ export default function Footer() {
               <span>🇮🇳</span>
             </div>
             <p className="font-[family-name:var(--font-hand)] text-xl text-accent-orange mb-2">
-              Saath Kaam, Saath Payment
+              Work Together. Get Paid Together.
             </p>
             <p className="font-[family-name:var(--font-body)] text-sm text-ink-soft max-w-sm">
               Programmable stablecoin payment rails built on Solana. Powered by

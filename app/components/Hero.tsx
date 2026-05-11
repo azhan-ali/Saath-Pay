@@ -102,18 +102,16 @@ export default function Hero() {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3, duration: 0.7 }}
-          className="text-center font-[family-name:var(--font-marker)] text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-ink leading-[1.1] mb-4"
+          className="text-center font-[family-name:var(--font-marker)] text-4xl sm:text-5xl md:text-6xl lg:text-7xl text-ink leading-[1.15] mb-4"
         >
-          Get Paid in{" "}
+          Stop Waiting 7 Days
+          <br />
+          For Money You{" "}
           <span className="inline-block relative">
-            <span className="highlight">Seconds</span>
+            <span className="highlight">Already</span>
           </span>
-          .
           <br />
-          <span className="text-stroke">Not Days.</span>{" "}
-          <span className="text-stroke">Not Weeks.</span>
-          <br />
-          <span className="squiggle">Seconds.</span>
+          <span className="squiggle">Earned.</span>
         </motion.h1>
 
         {/* Sub-headline */}
@@ -124,7 +122,7 @@ export default function Hero() {
           className="text-center font-[family-name:var(--font-body)] text-base md:text-lg text-ink-soft max-w-3xl mx-auto mb-3"
         >
           <span className="font-[family-name:var(--font-hand)] text-2xl md:text-3xl text-accent-orange">
-            Saath Kaam, Saath Payment
+            Work Together. Get Paid Together.
           </span>
         </motion.p>
 

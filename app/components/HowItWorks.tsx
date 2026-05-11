@@ -118,7 +118,7 @@ export default function HowItWorks() {
           className="flex flex-col items-center mt-10"
         >
           <p className="font-[family-name:var(--font-hand)] text-lg text-accent-orange mb-2">
-            that&apos;s literally it ↓
+            simple as that ↓
           </p>
           <a href="#signup" className="sketch-btn sketch-btn-green">
             Try it yourself →

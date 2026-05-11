@@ -19,100 +19,89 @@ const features = [
   {
     icon: Lock,
     title: "Smart Escrow Vault",
-    desc: "Client ka paisa Solana blockchain pe secure locker mein. No cheating, no ghosting.",
+    desc: "Client funds are locked in a Solana smart contract. No cheating, no ghosting, no disputes.",
     color: "sketch-card-yellow",
     iconBg: "bg-accent-yellow",
-    tag: "Core",
     rotation: "-2deg",
   },
   {
     icon: Target,
     title: "Milestone Payments",
-    desc: "Project ko 3–5 milestones mein todo. Har milestone pe alag payment release.",
+    desc: "Break any project into 3–5 milestones. Each milestone releases a separate payment on approval.",
     color: "sketch-card-pink",
     iconBg: "bg-accent-pink",
-    tag: "Core",
     rotation: "1deg",
   },
   {
     icon: Zap,
     title: "Instant Settlement",
-    desc: "Approval ke 2 seconds baad USDC freelancer ke wallet mein. No 5-day wait.",
+    desc: "USDC lands in your wallet within 2 seconds of approval. No 5-day bank delays.",
     color: "sketch-card-green",
     iconBg: "bg-accent-green",
-    tag: "Core",
     rotation: "-1deg",
   },
   {
     icon: CreditCard,
-    title: "Dodo Payments",
-    desc: "Client normal card/UPI se pay kare. Dodo handles fiat → USDC seamlessly.",
+    title: "Stripe Payments",
+    desc: "Clients pay with any card, UPI, or bank transfer. Stripe handles fiat → USDC seamlessly.",
     color: "sketch-card-orange",
     iconBg: "bg-accent-orange",
-    tag: "Winning",
     rotation: "2deg",
   },
   {
     icon: Sparkles,
     title: "AI Milestone Assistant",
-    desc: "Project describe karo, Gemini 3 seconds mein smart milestones suggest karta hai.",
+    desc: "Describe your project and Gemini AI generates smart, structured milestones in under 3 seconds.",
     color: "sketch-card-purple",
     iconBg: "bg-accent-purple",
-    tag: "AI",
     rotation: "-1.5deg",
   },
   {
     icon: Shield,
     title: "AI Risk Detection",
-    desc: "Suspicious behaviour, fake proofs, fraud patterns AI auto-detect karta hai.",
+    desc: "Suspicious behaviour, fake proofs, and fraud patterns are automatically flagged by AI.",
     color: "sketch-card-blue",
     iconBg: "bg-accent-blue",
-    tag: "AI",
     rotation: "1.5deg",
   },
   {
     icon: FileText,
     title: "Auto Invoicing",
-    desc: "Invoices, receipts, payout logs, tax summaries — sab auto-generate ho jaata hai.",
+    desc: "Invoices, receipts, payout logs, and tax summaries are generated automatically after every payment.",
     color: "sketch-card-yellow",
     iconBg: "bg-accent-yellow",
-    tag: "Utility",
     rotation: "-2deg",
   },
   {
     icon: Star,
     title: "Reputation System",
-    desc: "On-chain reputation score. More trust = better projects = more income.",
+    desc: "Build an on-chain reputation score. Higher trust means better projects and higher income.",
     color: "sketch-card-pink",
     iconBg: "bg-accent-pink",
-    tag: "Trust",
     rotation: "1deg",
   },
   {
     icon: Bell,
     title: "Real-Time Alerts",
-    desc: "Escrow funded, milestone approved, payout released — turant notifications.",
+    desc: "Instant notifications when escrow is funded, a milestone is approved, or a payout is released.",
     color: "sketch-card-green",
     iconBg: "bg-accent-green",
-    tag: "UX",
     rotation: "-1deg",
   },
   {
     icon: BarChart3,
     title: "Analytics Dashboard",
-    desc: "Earnings, pending payouts, client activity, payment charts — sab ek jagah.",
+    desc: "Track earnings, pending payouts, client activity, and payment charts — all in one place.",
     color: "sketch-card-orange",
     iconBg: "bg-accent-orange",
-    tag: "Insights",
     rotation: "2deg",
   },
   {
     icon: Bot,
     title: "Agent Payments (x402)",
-    desc: "AI agents ko autonomous micropayments. Humans + agents saath kaam, saath payment.",
+    desc: "AI agents receive autonomous micropayments via the x402 protocol. Humans and agents, paid together.",
     color: "sketch-card-purple",
     iconBg: "bg-accent-purple",
-    tag: "Bonus 🔥",
     rotation: "-1.5deg",
   },
 ];
@@ -168,11 +157,6 @@ export default function Features() {
                 className={`sketch-card ${f.color}`}
                 style={{ transform: `rotate(${f.rotation})` }}
               >
-                {/* Tag */}
-                <div className="absolute -top-3 -right-3 px-3 py-1 bg-ink text-paper font-[family-name:var(--font-sketch)] text-xs rounded-[8px_10px_9px_11px] shadow-[2px_2px_0_rgba(0,0,0,0.2)]">
-                  {f.tag}
-                </div>
-
                 {/* Icon */}
                 <div
                   className={`inline-flex h-11 w-11 items-center justify-center rounded-[14px_17px_15px_18px] ${f.iconBg} border-[2.5px] border-ink shadow-[3px_3px_0_#1a1a1a] mb-3`}
